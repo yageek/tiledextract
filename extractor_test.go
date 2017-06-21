@@ -1,19 +1,24 @@
 package tiledextract
 
 import (
+	"bytes"
 	"encoding/xml"
+	"os"
 	"testing"
 )
 
-func TestExtract(t *testing.T) {
+func TestExtracts(t *testing.T) {
 
 	raw := `<?xml version="1.0" encoding="UTF-8"?>
 		<tileset name="dwqdwdqwd" tilewidth="50" tileheight="50" spacing="1" margin="1" tilecount="15" columns="5">
  		<image source="tmw_desert_spacing.png" width="265" height="199"/>
 		</tileset>
 `
-	tile := TileSet{}
-	if err := xml.Unmarshal([]byte(raw), &tile); err != nil {
+
+	ext := &Extractor{}
+	buff := bytes.NewBufferString(raw)
+	tile, err := ext.Extracts(buff)
+	if err != nil {
 		t.Errorf("The tiled set should be correctly decoded: %v", err)
 	}
 
@@ -36,5 +41,34 @@ func TestExtract(t *testing.T) {
 	image := tile.Image
 	if image.Source != "tmw_desert_spacing.png" || image.Height != 199 || image.Width != 265 {
 		t.Errorf("The image should be correctly decoded")
+	}
+
+}
+
+func TestResources(t *testing.T) {
+	file, _ := os.Open("./resources/TileMap.tmx")
+	defer file.Close()
+
+	ext := &Extractor{}
+
+	tile, err := ext.Extracts(file)
+
+	if tile.Image.Source != "tmw_desert_spacing.png" || err != nil {
+		t.Errorf("Should be able to decode the source image.")
+	}
+}
+
+func TestConvertion(t *testing.T) {
+
+	file, _ := os.Open("./resources/TileMap.tmx")
+	defer file.Close()
+	tile := TileSet{}
+
+	xml.NewDecoder(file).Decode(&tile)
+
+	ext := &Extractor{}
+	err := ext.Convert(tile, "output")
+	if err != nil {
+		t.Errorf("Should not have failed: %v", err)
 	}
 }

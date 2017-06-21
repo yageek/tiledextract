@@ -1,10 +1,12 @@
 package tiledextract
 
 import (
+	"encoding/xml"
 	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -15,15 +17,34 @@ import (
 type Extractor struct {
 }
 
-func (e *Extractor) Extracts(set TileSet, path string) error {
+func (e *Extractor) Extracts(r io.Reader) (*TileSet, error) {
+	decoder := xml.NewDecoder(r)
 
-	if err := e.createFinal(path); err != nil {
+	for {
+		tok, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+
+		switch t := tok.(type) {
+		case xml.StartElement:
+			if t.Name.Local == "tileset" {
+				tileSet := &TileSet{}
+				err := decoder.DecodeElement(tileSet, &t)
+				return tileSet, err
+			}
+		}
+	}
+	return nil, io.EOF
+}
+
+func (e *Extractor) Convert(set TileSet, outputPath string) error {
+
+	if err := e.createFinal(outputPath); err != nil {
 		return errors.Wrap(err, "Impossible to create destination directory")
 	}
-
-	tmxDir := filepath.Dir(set.Image.Source)
-
-	source, err := os.Open(tmxDir)
+	println("InputPath:", set.Image.Source)
+	source, err := os.Open(set.Image.Source)
 	if err != nil {
 		return errors.Wrap(err, "Impossible to read tiled file")
 	}
@@ -40,7 +61,7 @@ func (e *Extractor) Extracts(set TileSet, path string) error {
 			subRectangle := image.Rect(c*set.TileWidth, r*set.TileHeight, set.TileWidth, set.TileHeight)
 			newImage := e.crop(m, subRectangle)
 
-			file, err := os.Open(filepath.Join(path, fmt.Sprintf("%d_%d.png", r, c)))
+			file, err := os.Open(filepath.Join(outputPath, fmt.Sprintf("%d_%d.png", r, c)))
 			if err != nil {
 				print(err)
 				continue
