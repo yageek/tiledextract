@@ -2,7 +2,6 @@ package tiledextract
 
 import (
 	"bytes"
-	"encoding/xml"
 	"os"
 	"testing"
 )
@@ -42,7 +41,6 @@ func TestExtracts(t *testing.T) {
 	if image.Source != "tmw_desert_spacing.png" || image.Height != 199 || image.Width != 265 {
 		t.Errorf("The image should be correctly decoded")
 	}
-
 }
 
 func TestResources(t *testing.T) {
@@ -51,7 +49,7 @@ func TestResources(t *testing.T) {
 
 	ext := &Extractor{}
 
-	tile, err := ext.Extracts(file)
+	tile, err := ext.extracts(file)
 
 	if tile.Image.Source != "tmw_desert_spacing.png" || err != nil {
 		t.Errorf("Should be able to decode the source image.")
@@ -62,12 +60,10 @@ func TestConvertion(t *testing.T) {
 
 	file, _ := os.Open("./resources/TileMap.tmx")
 	defer file.Close()
-	tile := TileSet{}
-
-	xml.NewDecoder(file).Decode(&tile)
 
 	ext := &Extractor{}
-	err := ext.Convert(tile, "output")
+	tile, _ := ext.extracts(file)
+	err := ext.convert(tile, "./resources/", "output")
 	if err != nil {
 		t.Errorf("Should not have failed: %v", err)
 	}
