@@ -1,0 +1,2 @@
+TileMap.tmx filter=lfs diff=lfs merge=lfs -text
+tmw_desert_spacing.png filter=lfs diff=lfs merge=lfs -text
