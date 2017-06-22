@@ -1,4 +1,4 @@
-package tiledextract
+package main
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ func TestExtracts(t *testing.T) {
 
 	ext := &Extractor{}
 	buff := bytes.NewBufferString(raw)
-	tile, err := ext.Extracts(buff)
+	tile, err := ext.extracts(buff)
 	if err != nil {
 		t.Errorf("The tiled set should be correctly decoded: %v", err)
 	}
@@ -56,14 +56,10 @@ func TestResources(t *testing.T) {
 	}
 }
 
-func TestConvertion(t *testing.T) {
-
-	file, _ := os.Open("./resources/TileMap.tmx")
-	defer file.Close()
+func TestProcess(t *testing.T) {
 
 	ext := &Extractor{}
-	tile, _ := ext.extracts(file)
-	err := ext.convert(tile, "./resources/", "output")
+	err := ext.Process("./resources/TileMap.tmx", "output")
 	if err != nil {
 		t.Errorf("Should not have failed: %v", err)
 	}

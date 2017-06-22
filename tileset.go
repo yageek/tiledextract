@@ -1,6 +1,8 @@
-package tiledextract
+package main
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 // TileSet represents a Tiled XML
 type TileSet struct {

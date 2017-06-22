@@ -1,4 +1,4 @@
-package tiledextract
+package main
 
 import (
 	"encoding/xml"
@@ -18,14 +18,21 @@ type Extractor struct {
 }
 
 // Process a tilemap file
-func (e *Extractor) Process(r io.Reader, outputPath string) error {
-	_, err := e.extracts(r)
+func (e *Extractor) Process(inputPath, outputPath string) error {
+	file, err := os.Open(inputPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Invalid input file")
 	}
-	return nil
+	defer file.Close()
 
+	tile, err := e.extracts(file)
+	if err != nil {
+		return errors.Wrap(err, "No tileset found")
+	}
+
+	return e.convert(tile, filepath.Dir(inputPath), outputPath)
 }
+
 func (e *Extractor) extracts(r io.Reader) (*TileSet, error) {
 	decoder := xml.NewDecoder(r)
 
@@ -63,8 +70,8 @@ func (e *Extractor) convert(set *TileSet, inputPath, outputPath string) error {
 	if err != nil {
 		return errors.Wrap(err, "Impossible to decode image")
 	}
-	fmt.Printf("Tileset: %+v \n", set)
 
+	hadErrors := false
 	for tile := 0; tile < set.TileCount; tile++ {
 		c := tile % set.ColumnsCount
 		r := tile / set.ColumnsCount
@@ -73,25 +80,24 @@ func (e *Extractor) convert(set *TileSet, inputPath, outputPath string) error {
 
 		dp := image.Pt(w, h)
 		subRectangle := image.Rectangle{dp, dp.Add(image.Pt(set.TileWidth, set.TileHeight))}
-		fmt.Printf("Getting (row: %d, colum: %d),: %+v \n", r, c, subRectangle)
 		newImage := e.crop(m, subRectangle)
 
 		outputImagePath := filepath.Join(outputPath, fmt.Sprintf("%d.png", tile))
-		fmt.Printf("OutputPath: %v \n", outputImagePath)
 		file, err := os.Create(outputImagePath)
 		if err != nil {
-			fmt.Printf("Error creating file: %v \n", err)
+			fmt.Fprintf(os.Stderr, "Impossible to create file: %v \n", err)
+			hadErrors = true
 			continue
 		}
 		defer file.Close()
 
 		if err := png.Encode(file, newImage); err != nil {
-			fmt.Printf("Error: %v \n", err)
 			continue
 		}
+	}
 
-		fmt.Println("Success")
-
+	if hadErrors {
+		return errors.New("Some errors occurs during parsing")
 	}
 	return nil
 }
