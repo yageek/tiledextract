@@ -99,6 +99,7 @@ func (e *Extractor) convert(set *TileSet, inputPath, outputPath string) error {
 	if hadErrors {
 		return errors.New("Some errors occurs during parsing")
 	}
+	fmt.Printf("Successfully extracted %d tiles to %s \n", set.TileCount, outputPath)
 	return nil
 }
 
